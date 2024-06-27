@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Hire Optimization</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .resource-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .progress-bar {
+            height: 30px;
+        }
+        .form-inline .form-group {
+            margin-right: 1rem;
+        }
+        .form-inline .btn {
+            margin-top: 24px;
+        }
+    </style>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Resource Hire Optimization</h1>
+        <div class="resource-form">
+            <h2>Add Resource</h2>
+            <form id="resourceForm" class="form-inline mb-4">
+                <div class="form-group">
+                    <label for="name" class="mr-2">Name</label>
+                    <input type="text" class="form-control" id="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="dailyCost" class="mr-2">Daily Cost</label>
+                    <input type="number" class="form-control" id="dailyCost" required>
+                </div>
+                <div class="form-group">
+                    <label for="minDays" class="mr-2">Min Days</label>
+                    <input type="number" class="form-control" id="minDays" required>
+                </div>
+                <div class="form-group">
+                    <label for="startDate" class="mr-2">Start Date</label>
+                    <input type="date" class="form-control" id="startDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="color" class="mr-2">Color</label>
+                    <input type="color" class="form-control" id="color" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Add</button>
+            </form>
+            <button class="btn btn-success mr-2" onclick="saveState()">Save State</button>
+            <button class="btn btn-warning" onclick="loadState()">Load State</button>
+        </div>
+        <div class="resource-list">
+            <h2>Resources</h2>
+            <ul id="resourceList" class="list-group"></ul>
+        </div>
+        <div class="gantt-chart mt-4">
+            <h2>Gantt Chart</h2>
+            <div class="btn-group mb-2" role="group">
+                <button class="btn btn-secondary" onclick="setViewMode('Day')">Day</button>
+                <button class="btn btn-secondary" onclick="setViewMode('Week')">Week</button>
+                <button class="btn btn-secondary" onclick="setViewMode('Month')">Month</button>
+            </div>
+            <div id="ganttChart" style="height: 500px;"></div>
+        </div>
+        <div class="budget-info mt-4">
+            <h2>Budget Info</h2>
+            <div id="budgetDetails" class="mb-3"></div>
+            <p>Total Budget: <span id="totalBudget">300000 EUR</span></p>
+            <p>Total Cost: <span id="totalCost">0 EUR</span></p>
+            <p>Budget Used: <span id="budgetUsed">0%</span></p>
+            <div class="progress mt-2">
+                <div id="budgetProgressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
