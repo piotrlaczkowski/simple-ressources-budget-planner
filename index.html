@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resource Hire Optimization</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css">
     <style>
         .resource-item {
             display: flex;
@@ -20,8 +21,16 @@
         .form-inline .btn {
             margin-top: 24px;
         }
+        .gantt-container {
+            height: auto;
+        }
+        .budget-info {
+            margin-top: 50px;
+        }
+        .collapsible-content {
+            display: none;
+        }
     </style>
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 </head>
 <body>
     <div class="container mt-5">
@@ -46,6 +55,10 @@
                     <input type="date" class="form-control" id="startDate" required>
                 </div>
                 <div class="form-group">
+                    <label for="endDate" class="mr-2">End Date</label>
+                    <input type="date" class="form-control" id="endDate" required>
+                </div>
+                <div class="form-group">
                     <label for="color" class="mr-2">Color</label>
                     <input type="color" class="form-control" id="color" required>
                 </div>
@@ -53,19 +66,21 @@
             </form>
             <button class="btn btn-success mr-2" onclick="saveState()">Save State</button>
             <button class="btn btn-warning" onclick="loadState()">Load State</button>
+            <button class="btn btn-info" onclick="toggleCollapsible()">Toggle Resources Panel</button>
         </div>
-        <div class="resource-list">
+        <div class="resource-list collapsible-content">
             <h2>Resources</h2>
             <ul id="resourceList" class="list-group"></ul>
         </div>
         <div class="gantt-chart mt-4">
             <h2>Gantt Chart</h2>
             <div class="btn-group mb-2" role="group">
-                <button class="btn btn-secondary" onclick="setViewMode('Day')">Day</button>
-                <button class="btn btn-secondary" onclick="setViewMode('Week')">Week</button>
-                <button class="btn btn-secondary" onclick="setViewMode('Month')">Month</button>
+                <button class="btn btn-secondary" onclick="setViewMode('day')">Day</button>
+                <button class="btn btn-secondary" onclick="setViewMode('week')">Week</button>
+                <button class="btn btn-secondary" onclick="setViewMode('month')">Month</button>
+                <button class="btn btn-info" onclick="toggleResourceTimeline()">Toggle Resource Timeline</button>
             </div>
-            <div id="ganttChart" style="height: 500px;"></div>
+            <div id="ganttChart" class="gantt-container"></div>
         </div>
         <div class="budget-info mt-4">
             <h2>Budget Info</h2>
@@ -78,6 +93,7 @@
             </div>
         </div>
     </div>
+    <script src="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

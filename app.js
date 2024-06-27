@@ -1,6 +1,3 @@
-google.charts.load('current', {'packages':['gantt']});
-google.charts.setOnLoadCallback(drawGanttChart);
-
 const budget = 300000; // 300k EUR
 const resources = [];
 let ganttChart;
@@ -12,9 +9,10 @@ document.getElementById('resourceForm').addEventListener('submit', function(even
     const dailyCost = parseFloat(document.getElementById('dailyCost').value);
     const minDays = parseInt(document.getElementById('minDays').value);
     const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
     const color = document.getElementById('color').value;
 
-    const resource = { name, dailyCost, minDays, startDate, color };
+    const resource = { id: resources.length + 1, name, dailyCost, minDays, startDate, endDate, color };
     resources.push(resource);
 
     updateResourceList();
@@ -32,7 +30,9 @@ function updateResourceList() {
         listItem.className = 'list-group-item resource-item';
         listItem.innerHTML = `
             ${resource.name} - Daily Cost: ${resource.dailyCost} EUR - Min Days: ${resource.minDays} -
-            Start Date: <input type="date" value="${resource.startDate}" onchange="updateResource(${index}, this.value)">
+            Start Date: <input type="date" value="${resource.startDate}" onchange="updateResource(${index}, this.value, 'start')">
+            End Date: <input type="date" value="${resource.endDate}" onchange="updateResource(${index}, this.value, 'end')">
+            Color: <input type="color" value="${resource.color}" onchange="updateResourceColor(${index}, this.value)">
             <div style="background-color: ${resource.color}; width: 20px; height: 20px;"></div>
         `;
         const removeButton = document.createElement('button');
@@ -48,8 +48,17 @@ function updateResourceList() {
     });
 }
 
-function updateResource(index, startDate) {
-    resources[index].startDate = startDate;
+function updateResource(index, date, type) {
+    if (type === 'start') {
+        resources[index].startDate = date;
+    } else if (type === 'end') {
+        resources[index].endDate = date;
+    }
+    calculateAllocations();
+}
+
+function updateResourceColor(index, color) {
+    resources[index].color = color;
     calculateAllocations();
 }
 
@@ -60,13 +69,18 @@ function calculateAllocations() {
     resources.forEach((resource, index) => {
         const totalCostForResource = resource.dailyCost * resource.minDays;
         const startDate = new Date(resource.startDate);
-        const endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + resource.minDays);
+        const endDate = new Date(resource.endDate);
 
-        tasks.push([
-            `Task${index}`, resource.name, resource.name,
-            startDate, endDate, null, 100, null
-        ]);
+        tasks.push({
+            id: resource.id,
+            text: resource.name,
+            start_date: startDate,
+            end_date: endDate,
+            color: resource.color,
+            dailyCost: resource.dailyCost,
+            totalCost: totalCostForResource,
+            budgetPercentage: (totalCostForResource / budget) * 100
+        });
 
         totalCost += totalCostForResource;
     });
@@ -79,27 +93,18 @@ function calculateAllocations() {
 }
 
 function drawGanttChart(tasks = []) {
-    const data = new google.visualization.DataTable();
-    data.addColumn('string', 'Task ID');
-    data.addColumn('string', 'Task Name');
-    data.addColumn('string', 'Resource');
-    data.addColumn('date', 'Start Date');
-    data.addColumn('date', 'End Date');
-    data.addColumn('number', 'Duration');
-    data.addColumn('number', 'Percent Complete');
-    data.addColumn('string', 'Dependencies');
-
-    data.addRows(tasks);
-
-    const options = {
-        height: 400,
-        gantt: {
-            trackHeight: 30
-        }
-    };
-
-    ganttChart = new google.visualization.Gantt(document.getElementById('ganttChart'));
-    ganttChart.draw(data, options);
+    ganttChart.clearAll();
+    ganttChart.parse({
+        data: tasks.map(task => ({
+            id: task.id,
+            text: task.text,
+            start_date: task.start_date,
+            end_date: task.end_date,
+            color: task.color
+        }))
+    });
+    ganttChart.render();
+    document.getElementById('ganttChart').style.height = `${resources.length * 40 + 100}px`; // Dynamic height based on the number of resources
 }
 
 function updateBudgetProgressBar(totalCost) {
@@ -143,11 +148,76 @@ function loadState() {
 }
 
 function setViewMode(mode) {
-    // Adjust the Gantt chart view mode here
-    // Google Gantt chart does not support different view modes out of the box
-    // This will require a different library or custom implementation for view modes
+    if (mode === 'day') {
+        ganttChart.config.scale_unit = 'day';
+        ganttChart.config.date_scale = "%d %M";
+    } else if (mode === 'week') {
+        ganttChart.config.scale_unit = 'week';
+        ganttChart.config.date_scale = "Week #%W";
+        ganttChart.config.subscales = [{ unit: "day", step: 1, date: "%D" }];
+    } else if (mode === 'month') {
+        ganttChart.config.scale_unit = 'month';
+        ganttChart.config.date_scale = "%F %Y";
+        ganttChart.config.subscales = [{ unit: "week", step: 1, date: "Week #%W" }];
+    }
+    ganttChart.render();
+}
+
+function toggleResourceTimeline() {
+    if (ganttChart.config.start_date && ganttChart.config.end_date) {
+        ganttChart.config.start_date = null;
+        ganttChart.config.end_date = null;
+    } else {
+        const startDates = resources.map(r => new Date(r.startDate));
+        const endDates = resources.map(r => new Date(r.endDate));
+        ganttChart.config.start_date = new Date(Math.min.apply(null, startDates));
+        ganttChart.config.end_date = new Date(Math.max.apply(null, endDates));
+    }
+    ganttChart.render();
+}
+
+function toggleCollapsible() {
+    const content = document.querySelector('.collapsible-content');
+    content.style.display = content.style.display === 'none' ? 'block' : 'none';
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    ganttChart = gantt;
+    ganttChart.init("ganttChart");
+
+    ganttChart.attachEvent("onTaskDrag", function(id, mode, task) {
+        const resource = resources.find(r => r.id == id);
+        if (resource) {
+            resource.startDate = task.start_date;
+            resource.endDate = task.end_date;
+            resource.minDays = (new Date(task.end_date) - new Date(task.start_date)) / (1000 * 60 * 60 * 24);
+            updateResourceList();
+            calculateAllocations();
+        }
+        return true;
+    });
+
+    ganttChart.attachEvent("onAfterTaskUpdate", function(id, task) {
+        const resource = resources.find(r => r.id == id);
+        if (resource) {
+            resource.startDate = task.start_date;
+            resource.endDate = task.end_date;
+            resource.minDays = (new Date(task.end_date) - new Date(task.start_date)) / (1000 * 60 * 60 * 24);
+            updateResourceList();
+            calculateAllocations();
+        }
+    });
+
+    ganttChart.attachEvent("onTaskDragEnd", function(id, task) {
+        const resource = resources.find(r => r.id == id);
+        if (resource) {
+            resource.startDate = task.start_date;
+            resource.endDate = task.end_date;
+            resource.minDays = (new Date(task.end_date) - new Date(task.start_date)) / (1000 * 60 * 60 * 24);
+            updateResourceList();
+            calculateAllocations();
+        }
+    });
+
     calculateAllocations();
 });
