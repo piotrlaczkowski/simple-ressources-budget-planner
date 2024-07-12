@@ -74,11 +74,22 @@
             justify-content: flex-end;
             margin-bottom: 10px;
         }
+        .budget-panel {
+            display: flex;
+            justify-content: space-between;
+        }
+        .budget-panel .section-container {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .budget-panel .section-container:last-child {
+            margin-right: 0;
+        }
     </style>
 </head>
 <body>
     <div class="container mt-5">
-        <h1 class="mb-4">Resource Hire Optimization</h1>
+        <h1 class="mb-4">Resources Budget Planner</h1>
 
         <div class="toolbar">
             <button class="btn btn-success mr-2" onclick="saveState()">Save State</button>
@@ -139,22 +150,94 @@
             </div>
         </div>
 
-        <div class="section-container">
-            <h2>Budget Info</h2>
-            <form id="budgetForm" class="form-inline mb-4">
-                <div class="form-group">
-                    <label for="budget">Current Budget</label>
-                    <input type="number" class="form-control ml-2" id="budget" value="190000" required>
-                </div>
-                <button type="submit" class="btn btn-primary ml-2">Set Budget</button>
-            </form>
-            <div id="budgetDetails" class="mb-3"></div>
-            <h3>Total Budget</h3>
-            <p><b>Total Budget:</b> <span id="totalBudget">190000 EUR</span></p>
-            <p><b>Total Cost:</b> <span id="totalCost">0 EUR</span></p>
+        <div class="budget-panel">
+            <div class="section-container">
+                <h2>Budget Info</h2>
+                <form id="budgetForm" class="form-inline mb-4">
+                    <div class="form-group">
+                        <label for="budget">Current Budget</label>
+                        <input type="number" class="form-control ml-2" id="budget" value="190000" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary ml-2">Set Budget</button>
+                </form>
+                <div id="budgetDetails" class="mb-3"></div>
+            </div>
+            <div class="section-container">
+                <h2>Total Budget</h2>
+                <p><b>Total Budget:</b> <span id="totalBudget">190000 EUR</span></p>
+                <p><b>Total Cost:</b> <span id="totalCost">0 EUR</span></p>
+            </div>
         </div>
     </div>
     <script src="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js"></script>
     <script src="app.js"></script>
+    <script>
+        // Helper function to format numbers
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + ' M EUR';
+            }
+            if (num >= 1000) {
+                return (num / 1000).toFixed(1) + ' kEUR';
+            }
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' EUR';
+        }
+
+        function updateBudgetDetails() {
+            const budgetDetails = document.getElementById('budgetDetails');
+            budgetDetails.innerHTML = '';
+            resources.forEach(resource => {
+                const startDate = new Date(resource.startDate);
+                const endDate = new Date(resource.endDate);
+                const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                const totalCostForResource = resource.dailyCost * totalDays;
+                const budgetPercentage = (totalCostForResource / budget) * 100;
+                const detailItem = document.createElement('p');
+                detailItem.innerHTML = `<b>${resource.name}</b> - Total Cost: ${formatNumber(totalCostForResource)} - Budget Usage: ${budgetPercentage.toFixed(2)}%`;
+                budgetDetails.appendChild(detailItem);
+            });
+        }
+
+        function calculateAllocations() {
+            const tasks = [];
+            let totalCost = 0;
+
+            resources.forEach((resource, index) => {
+                const startDate = new Date(resource.startDate);
+                const endDate = new Date(resource.endDate);
+                const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                const totalCostForResource = resource.dailyCost * totalDays;
+
+                tasks.push({
+                    id: resource.id,
+                    text: resource.name,
+                    start_date: startDate,
+                    end_date: endDate,
+                    color: resource.color,
+                    dailyCost: resource.dailyCost,
+                    totalCost: totalCostForResource,
+                    budgetPercentage: (totalCostForResource / budget) * 100
+                });
+
+                totalCost += totalCostForResource;
+            });
+
+            document.getElementById('totalCost').textContent = formatNumber(totalCost);
+            document.getElementById('budgetUsed').textContent = `${((totalCost / budget) * 100).toFixed(2)}%`;
+            drawGanttChart(tasks);
+            updateBudgetProgressBar(totalCost);
+            updateBudgetDetails();
+        }
+
+        function updateBudgetProgressBar(totalCost) {
+            const progressBar = document.getElementById('budgetProgressBar');
+            const budgetUsedPercent = (totalCost / budget) * 100;
+            progressBar.style.width = `${budgetUsedPercent}%`;
+            progressBar.classList.toggle('bg-danger', budgetUsedPercent > 100);
+            progressBar.classList.toggle('bg-success', budgetUsedPercent <= 100);
+        }
+
+        // Ensure to call `calculateAllocations` whenever you update the resources or the budget
+    </script>
 </body>
 </html>
