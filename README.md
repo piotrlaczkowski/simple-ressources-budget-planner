@@ -33,6 +33,8 @@ A simple web application to help visualize budget allocations for resources. It 
 
 ## Demo
 
+You can access the app on my [GithubPages](https://piotrlaczkowski.github.io/simple-ressources-budget-planner/) directly !!
+
 ![Resource Budget Planner Screenshot](imgs/app_screen.png)
 
 ## Contributing
