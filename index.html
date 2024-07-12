@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resource Hire Optimization</title>
+    <title>Resource Budget Planner</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css">
     <style>
@@ -121,7 +121,7 @@
         </div>
 
         <div class="section-container">
-            <h2>Gantt Chart</h2>
+            <h2>Timeline</h2>
             <div class="btn-group mb-2" role="group">
                 <button class="btn btn-secondary" onclick="setViewMode('day')">Day</button>
                 <button class="btn btn-secondary" onclick="setViewMode('week')">Week</button>
@@ -133,7 +133,7 @@
                 <button class="btn btn-info" onclick="saveAsImage()">Save as PNG</button>
             </div>
             <div id="ganttChart" class="gantt-container"></div>
-            <p>Budget Used: <span id="budgetUsed">0%</span></p>
+            <p>Budget Usage: <span id="budgetUsed">0%</span></p>
             <div class="progress mt-2 mb-4">
                 <div id="budgetProgressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
             </div>
@@ -150,8 +150,8 @@
             </form>
             <div id="budgetDetails" class="mb-3"></div>
             <h3>Total Budget</h3>
-            <p>Total Budget: <span id="totalBudget">190000 EUR</span></p>
-            <p>Total Cost: <span id="totalCost">0 EUR</span></p>
+            <p><b>Total Budget:</b> <span id="totalBudget">190000 EUR</span></p>
+            <p><b>Total Cost:</b> <span id="totalCost">0 EUR</span></p>
         </div>
     </div>
     <script src="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js"></script>

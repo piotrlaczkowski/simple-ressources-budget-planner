@@ -35,10 +35,10 @@ function updateResourceList() {
         const listItem = document.createElement('li');
         listItem.className = 'list-group-item resource-item';
         listItem.innerHTML = `
-            ${resource.name} - Daily Cost: ${resource.dailyCost} EUR -
-            Start Date: <input type="date" value="${resource.startDate}" onchange="updateResource(${index}, this.value, 'start')">
-            End Date: <input type="date" value="${resource.endDate}" onchange="updateResource(${index}, this.value, 'end')">
-            Color: <input type="color" value="${resource.color}" onchange="updateResourceColor(${index}, this.value)">
+            <b>${resource.name}</b> - <i>Daily Cost:</i> ${resource.dailyCost} EUR -
+            <i>Start Date:</i> <input type="date" value="${resource.startDate}" onchange="updateResource(${index}, this.value, 'start')">
+            <i>End Date:</i> <input type="date" value="${resource.endDate}" onchange="updateResource(${index}, this.value, 'end')">
+            <i>Color:</i> <input type="color" value="${resource.color}" onchange="updateResourceColor(${index}, this.value)">
             <div style="background-color: ${resource.color}; width: 20px; height: 20px;"></div>
         `;
         const removeButton = document.createElement('button');
