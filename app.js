@@ -1,4 +1,4 @@
-const budget = 300000; // 300k EUR
+let budget = 190000; // Default budget
 const resources = [];
 let ganttChart;
 
@@ -7,18 +7,24 @@ document.getElementById('resourceForm').addEventListener('submit', function(even
 
     const name = document.getElementById('name').value;
     const dailyCost = parseFloat(document.getElementById('dailyCost').value);
-    const minDays = parseInt(document.getElementById('minDays').value);
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
     const color = document.getElementById('color').value;
 
-    const resource = { id: resources.length + 1, name, dailyCost, minDays, startDate, endDate, color };
+    const resource = { id: resources.length + 1, name, dailyCost, startDate, endDate, color };
     resources.push(resource);
 
     updateResourceList();
     calculateAllocations();
 
     document.getElementById('resourceForm').reset();
+});
+
+document.getElementById('budgetForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    budget = parseFloat(document.getElementById('budget').value);
+    document.getElementById('totalBudget').textContent = `${budget} EUR`;
+    calculateAllocations();
 });
 
 function updateResourceList() {
@@ -29,7 +35,7 @@ function updateResourceList() {
         const listItem = document.createElement('li');
         listItem.className = 'list-group-item resource-item';
         listItem.innerHTML = `
-            ${resource.name} - Daily Cost: ${resource.dailyCost} EUR - Min Days: ${resource.minDays} -
+            ${resource.name} - Daily Cost: ${resource.dailyCost} EUR -
             Start Date: <input type="date" value="${resource.startDate}" onchange="updateResource(${index}, this.value, 'start')">
             End Date: <input type="date" value="${resource.endDate}" onchange="updateResource(${index}, this.value, 'end')">
             Color: <input type="color" value="${resource.color}" onchange="updateResourceColor(${index}, this.value)">
@@ -67,9 +73,10 @@ function calculateAllocations() {
     let totalCost = 0;
 
     resources.forEach((resource, index) => {
-        const totalCostForResource = resource.dailyCost * resource.minDays;
         const startDate = new Date(resource.startDate);
         const endDate = new Date(resource.endDate);
+        const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        const totalCostForResource = resource.dailyCost * totalDays;
 
         tasks.push({
             id: resource.id,
@@ -104,7 +111,7 @@ function drawGanttChart(tasks = []) {
         }))
     });
     ganttChart.render();
-    document.getElementById('ganttChart').style.height = `${resources.length * 40 + 100}px`; // Dynamic height based on the number of resources
+    document.getElementById('ganttChart').style.height = `${resources.length * 40 + 100}px`;
 }
 
 function updateBudgetProgressBar(totalCost) {
@@ -119,7 +126,10 @@ function updateBudgetDetails() {
     const budgetDetails = document.getElementById('budgetDetails');
     budgetDetails.innerHTML = '';
     resources.forEach(resource => {
-        const totalCostForResource = resource.dailyCost * resource.minDays;
+        const startDate = new Date(resource.startDate);
+        const endDate = new Date(resource.endDate);
+        const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        const totalCostForResource = resource.dailyCost * totalDays;
         const budgetPercentage = (totalCostForResource / budget) * 100;
         const detailItem = document.createElement('p');
         detailItem.textContent = `${resource.name} - Total Cost: ${totalCostForResource} EUR - Budget Usage: ${budgetPercentage.toFixed(2)}%`;
@@ -159,6 +169,10 @@ function setViewMode(mode) {
         ganttChart.config.scale_unit = 'month';
         ganttChart.config.date_scale = "%F %Y";
         ganttChart.config.subscales = [{ unit: "week", step: 1, date: "Week #%W" }];
+    } else if (mode === 'year') {
+        ganttChart.config.scale_unit = 'year';
+        ganttChart.config.date_scale = "%Y";
+        ganttChart.config.subscales = [{ unit: "month", step: 1, date: "%M" }];
     }
     ganttChart.render();
 }
@@ -176,6 +190,26 @@ function toggleResourceTimeline() {
     ganttChart.render();
 }
 
+function zoomGantt(direction) {
+    if (direction === 'in') {
+        ganttChart.ext.zoom.zoomIn();
+    } else {
+        ganttChart.ext.zoom.zoomOut();
+    }
+}
+
+function saveAsImage() {
+    ganttChart.exportToPNG({
+        raw: true,
+        callback: function (data) {
+            var link = document.createElement('a');
+            link.href = data;
+            link.download = 'gantt_chart.png';
+            link.click();
+        }
+    });
+}
+
 function toggleCollapsible() {
     const content = document.querySelector('.collapsible-content');
     content.style.display = content.style.display === 'none' ? 'block' : 'none';
@@ -188,9 +222,8 @@ document.addEventListener('DOMContentLoaded', function() {
     ganttChart.attachEvent("onTaskDrag", function(id, mode, task) {
         const resource = resources.find(r => r.id == id);
         if (resource) {
-            resource.startDate = task.start_date;
-            resource.endDate = task.end_date;
-            resource.minDays = (new Date(task.end_date) - new Date(task.start_date)) / (1000 * 60 * 60 * 24);
+            resource.startDate = task.start_date.toISOString().split('T')[0];
+            resource.endDate = task.end_date.toISOString().split('T')[0];
             updateResourceList();
             calculateAllocations();
         }
@@ -200,9 +233,8 @@ document.addEventListener('DOMContentLoaded', function() {
     ganttChart.attachEvent("onAfterTaskUpdate", function(id, task) {
         const resource = resources.find(r => r.id == id);
         if (resource) {
-            resource.startDate = task.start_date;
-            resource.endDate = task.end_date;
-            resource.minDays = (new Date(task.end_date) - new Date(task.start_date)) / (1000 * 60 * 60 * 24);
+            resource.startDate = task.start_date.toISOString().split('T')[0];
+            resource.endDate = task.end_date.toISOString().split('T')[0];
             updateResourceList();
             calculateAllocations();
         }
@@ -211,12 +243,20 @@ document.addEventListener('DOMContentLoaded', function() {
     ganttChart.attachEvent("onTaskDragEnd", function(id, task) {
         const resource = resources.find(r => r.id == id);
         if (resource) {
-            resource.startDate = task.start_date;
-            resource.endDate = task.end_date;
-            resource.minDays = (new Date(task.end_date) - new Date(task.start_date)) / (1000 * 60 * 60 * 24);
+            resource.startDate = task.start_date.toISOString().split('T')[0];
+            resource.endDate = task.end_date.toISOString().split('T')[0];
             updateResourceList();
             calculateAllocations();
         }
+    });
+
+    ganttChart.ext.zoom.init({
+        levels: [
+            { name: "day", scale_height: 27, min_column_width: 80, scales: [{ unit: "day", step: 1, format: "%d %M" }] },
+            { name: "week", scale_height: 50, min_column_width: 50, scales: [{ unit: "week", step: 1, format: "Week #%W" }, { unit: "day", step: 1, format: "%d %D" }] },
+            { name: "month", scale_height: 50, min_column_width: 120, scales: [{ unit: "month", step: 1, format: "%F, %Y" }, { unit: "week", step: 1, format: "#%W" }] },
+            { name: "year", scale_height: 90, min_column_width: 30, scales: [{ unit: "year", step: 1, format: "%Y" }, { unit: "month", step: 1, format: "%M" }] }
+        ]
     });
 
     calculateAllocations();
