@@ -85,6 +85,23 @@
         .budget-panel .section-container:last-child {
             margin-right: 0;
         }
+        .resource-detail-item {
+            background-color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .resource-detail-item:hover {
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .badge {
+            padding: 5px 10px;
+        }
+
+        .alert-info {
+            font-size: 0.9em;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -160,6 +177,9 @@
                     </div>
                     <button type="submit" class="btn btn-primary ml-2">Set Budget</button>
                 </form>
+                <div class="alert alert-info">
+                    <small>Note: Costs are calculated based on working days only (Monday-Friday)</small>
+                </div>
                 <div id="budgetDetails" class="mb-3"></div>
             </div>
             <div class="section-container">
@@ -189,11 +209,25 @@
             resources.forEach(resource => {
                 const startDate = new Date(resource.startDate);
                 const endDate = new Date(resource.endDate);
-                const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-                const totalCostForResource = resource.dailyCost * totalDays;
+                const workingDays = getWorkingDays(startDate, endDate);
+                const totalCostForResource = resource.dailyCost * workingDays;
                 const budgetPercentage = (totalCostForResource / budget) * 100;
-                const detailItem = document.createElement('p');
-                detailItem.innerHTML = `<b>${resource.name}</b> - Total Cost: ${formatNumber(totalCostForResource)} - Budget Usage: ${budgetPercentage.toFixed(2)}%`;
+
+                const detailItem = document.createElement('div');
+                detailItem.className = 'resource-detail-item mb-3 p-2 border rounded';
+                detailItem.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="font-weight-bold">${resource.name}</span>
+                        <span class="badge ${budgetPercentage > 100 ? 'badge-danger' : 'badge-success'}">
+                            ${budgetPercentage.toFixed(1)}%
+                        </span>
+                    </div>
+                    <div class="small text-muted">
+                        Working Days: ${workingDays} days<br>
+                        Daily Cost: ${formatNumber(resource.dailyCost)}<br>
+                        Total Cost: ${formatNumber(totalCostForResource)}
+                    </div>
+                `;
                 budgetDetails.appendChild(detailItem);
             });
         }
@@ -205,16 +239,17 @@
             resources.forEach((resource, index) => {
                 const startDate = new Date(resource.startDate);
                 const endDate = new Date(resource.endDate);
-                const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-                const totalCostForResource = resource.dailyCost * totalDays;
+                const workingDays = getWorkingDays(startDate, endDate);
+                const totalCostForResource = resource.dailyCost * workingDays;
 
                 tasks.push({
                     id: resource.id,
-                    text: resource.name,
+                    text: `${resource.name} (${workingDays} working days)`,
                     start_date: startDate,
                     end_date: endDate,
                     color: resource.color,
                     dailyCost: resource.dailyCost,
+                    workingDays: workingDays,
                     totalCost: totalCostForResource,
                     budgetPercentage: (totalCostForResource / budget) * 100
                 });
@@ -235,6 +270,9 @@
             progressBar.style.width = `${budgetUsedPercent}%`;
             progressBar.classList.toggle('bg-danger', budgetUsedPercent > 100);
             progressBar.classList.toggle('bg-success', budgetUsedPercent <= 100);
+            progressBar.setAttribute('aria-valuenow', budgetUsedPercent);
+            progressBar.setAttribute('aria-valuemin', '0');
+            progressBar.setAttribute('aria-valuemax', '100');
         }
 
         // Ensure to call `calculateAllocations` whenever you update the resources or the budget

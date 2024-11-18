@@ -75,8 +75,8 @@ function calculateAllocations() {
     resources.forEach((resource, index) => {
         const startDate = new Date(resource.startDate);
         const endDate = new Date(resource.endDate);
-        const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-        const totalCostForResource = resource.dailyCost * totalDays;
+        const workingDays = getWorkingDays(startDate, endDate);
+        const totalCostForResource = resource.dailyCost * workingDays;
 
         tasks.push({
             id: resource.id,
@@ -85,6 +85,7 @@ function calculateAllocations() {
             end_date: endDate,
             color: resource.color,
             dailyCost: resource.dailyCost,
+            workingDays: workingDays,
             totalCost: totalCostForResource,
             budgetPercentage: (totalCostForResource / budget) * 100
         });
@@ -92,7 +93,7 @@ function calculateAllocations() {
         totalCost += totalCostForResource;
     });
 
-    document.getElementById('totalCost').textContent = `${totalCost} EUR`;
+    document.getElementById('totalCost').textContent = formatNumber(totalCost);
     document.getElementById('budgetUsed').textContent = `${((totalCost / budget) * 100).toFixed(2)}%`;
     drawGanttChart(tasks);
     updateBudgetProgressBar(totalCost);
@@ -128,11 +129,15 @@ function updateBudgetDetails() {
     resources.forEach(resource => {
         const startDate = new Date(resource.startDate);
         const endDate = new Date(resource.endDate);
-        const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-        const totalCostForResource = resource.dailyCost * totalDays;
+        const workingDays = getWorkingDays(startDate, endDate);
+        const totalCostForResource = resource.dailyCost * workingDays;
         const budgetPercentage = (totalCostForResource / budget) * 100;
         const detailItem = document.createElement('p');
-        detailItem.textContent = `${resource.name} - Total Cost: ${totalCostForResource} EUR - Budget Usage: ${budgetPercentage.toFixed(2)}%`;
+        detailItem.innerHTML = `
+            <b>${resource.name}</b> -
+            Working Days: ${workingDays} days -
+            Total Cost: ${formatNumber(totalCostForResource)} -
+            Budget Usage: ${budgetPercentage.toFixed(2)}%`;
         budgetDetails.appendChild(detailItem);
     });
 }
@@ -261,3 +266,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     calculateAllocations();
 });
+
+function getWorkingDays(startDate, endDate) {
+    let workingDays = 0;
+    const currentDate = new Date(startDate);
+    const lastDate = new Date(endDate);
+
+    while (currentDate <= lastDate) {
+        // 0 is Sunday, 6 is Saturday
+        const dayOfWeek = currentDate.getDay();
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+            workingDays++;
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    return workingDays;
+}
